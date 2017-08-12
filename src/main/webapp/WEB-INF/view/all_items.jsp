@@ -14,6 +14,7 @@ All Items:
         <li>Mark: <c:out value="${item.name}"/></li>
         <li>Sold: <c:out value="${item.description}"/></li>
         <input name="pId" hidden type="number" value="${item.id}">
+        <a href="?pId=${item.id}">More</a>
         <hr />
     </ul>
 </c:forEach>
