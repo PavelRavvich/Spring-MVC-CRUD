@@ -9,12 +9,10 @@
     <title>Title</title>
 </head>
 <body>
-Menu:
+Menu:<hr />
 
-<a href="/home/get_all_items">get_all_items</a><hr />
-<a href="/home/add_item">add_item</a><hr />
-<a href="/home/delete_item">delete_item</a><hr />
-<a href="/home/update_item">update_item</a><hr />
+<a href="/menu/get_all_items.do">Get all Items</a><hr />
+<a href="/menu/add_item_page.do">Add Item</a><hr />
 
 </body>
 </html>
