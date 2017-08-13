@@ -5,10 +5,12 @@ import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import ru.pravvich.model.Item;
 
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Author : Pavel Ravvich.
@@ -16,109 +18,123 @@ import java.util.concurrent.CopyOnWriteArrayList;
  */
 @Controller
 public class ItemController {
+    /**
+     * Fake database for example.
+     */
+    private final Map<Integer, Item> items = new ConcurrentHashMap<>();
+    /**
+     * Generator of id.
+     */
+    private final AtomicInteger idGen = new AtomicInteger(1);
 
-    private final List<Item> items = new CopyOnWriteArrayList<>();
+    /**
+     * Default constructor.
+     */
+    public ItemController() {
+        //Demo Items.
+        items.put(1, new Item(idGen.getAndIncrement(), "test_1", "test_1"));
+        items.put(2, new Item(idGen.getAndIncrement(), "test_2", "test_2"));
+    }
 
+    /**
+     * Get home page.
+     */
     @RequestMapping(value = "/menu", method = RequestMethod.GET)
     public String home() {
         return "menu";
     }
 
-    @RequestMapping(value = "/home/single_item", method = RequestMethod.POST)
-    public String getById(@ModelAttribute int id, ModelMap model) {
+    /**
+     * Get Page with view Item by Id.
+     *
+     * @param id of Item.
+     * @return If Item exist then get single item page else find error page.
+     */
+    @RequestMapping(value = "/menu/get_single_item", method = RequestMethod.GET)
+    public String getById(@RequestParam(value = "id") int id, ModelMap model) {
 
-        boolean exist = false;
+        model.addAttribute("item", items.get(id));
 
-        for (final Item item : items) {
-            if (id == item.getId()) {
-                model.addAttribute("item", item);
-                exist = true;
-                break;
-            }
-        }
-
-        if (!exist) model.addAttribute("massage", "fail");
-
-        return exist ? "single_item" : "all_items";
+        return "single_item";
     }
 
-    @RequestMapping(value = "/home/get_all_items", method = RequestMethod.GET)
-    public String allItems(ModelMap model) {
-        model.addAttribute("items", items);
+    /**
+     * Get all Items page.
+     *
+     * @return all Items list.
+     */
+    @RequestMapping(value = "/menu/get_all_items", method = RequestMethod.GET)
+    public String getAllItems(ModelMap model) {
+
+        model.addAttribute("items", items.values());
+
         return "all_items";
     }
 
-
-
-    @RequestMapping(value = "/home/add_item_interface",
-            method = RequestMethod.GET)
-    public String addInterface() {
-        return "add_item_inter";
+    /**
+     * Get page for addition single Item.
+     */
+    @RequestMapping(value = "/menu/add_item_page", method = RequestMethod.GET)
+    public String addItem() {
+        return "add_item";
     }
 
+    /**
+     * Action addition the new Item to repo.
+     *
+     * @return page with all items.
+     */
+    @RequestMapping(value = "/menu/add_item", method = RequestMethod.POST)
+    public String add(@RequestParam(value = "name") final String name,
+                      @RequestParam(value = "description") final String desc,
+                      ModelMap model) {
 
-    @RequestMapping(value = "/home/add_item", method = RequestMethod.POST)
-    public String add(@ModelAttribute final Item item, final ModelMap model) {
+        final int id = idGen.getAndIncrement();
 
-        if (items.add(item)) {
+        items.put(id, new Item(id, name, desc));
 
-            model.addAttribute("massage", "success");
-
-        } else {
-
-            model.addAttribute("massage", "fail");
-        }
-
-        return "result_add_item";
+        return getAllItems(model);
     }
 
+    /**
+     * Delete Item from memory action.
+     *
+     * @param id of Item for delete.
+     * @return all Items page.
+     */
+    @RequestMapping(value = "/menu/delete_item", method = RequestMethod.POST)
+    public String delete(@RequestParam(value = "id") int id, ModelMap model) {
 
+        items.remove(id);
 
-    @RequestMapping(value = "/home/delete_item_interface",
-            method = RequestMethod.GET)
-    public String deleteInterface() {
-        return "delete_item_inter";
+        return getAllItems(model);
     }
 
-    @RequestMapping(value = "/home/delete_item", method = RequestMethod.POST)
-    public String delete(@ModelAttribute final Item item, ModelMap model) {
+    /**
+     * Get page for update single Item.
+     *
+     * @param id Item for update.
+     */
+    @RequestMapping(value = "/menu/update_item_page", method = RequestMethod.GET)
+    public String updateItemPage(@RequestParam(value = "id") final int id,
+                                 final ModelMap model) {
 
-        if (items.remove(item)) {
+        model.addAttribute("item", items.get(id));
 
-            model.addAttribute("massage", "success");
-
-        } else {
-
-            model.addAttribute("massage", "fail");
-        }
-
-        return "result_delete_item";
+        return "update_item";
     }
 
+    /**
+     * Update Item action.
+     *
+     * @param item new state for Item.
+     * @return page with all items list.
+     */
+    @RequestMapping(value = "/menu/update_item", method = RequestMethod.POST)
+    public String update(@ModelAttribute("item") Item item, ModelMap model) {
 
+        items.replace(item.getId(),item);
 
-    @RequestMapping(value = "/home/update_item_interface",
-            method = RequestMethod.GET)
-    public String updateInterface() {
-        return "update_item_interface";
-    }
-
-    @RequestMapping(value = "/home/update_item", method = RequestMethod.POST)
-    public String update(@ModelAttribute final Item item, ModelMap model) {
-
-        String massage = "fail";
-
-        for (Item i : items) {
-            if (i.getId() == item.getId()) {
-                items.remove(i);
-                items.add(item);
-                massage = "success";
-                break;
-            }
-        }
-
-        model.addAttribute("massage", massage);
-
-        return "result_update_item";
+        return getAllItems(model);
     }
 }
